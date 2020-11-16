@@ -100,9 +100,6 @@ class AnnotationBasedAutowiring implements DefinitionSource, Autowiring
     private function readProperties(ReflectionClass $class, ObjectDefinition $definition)
     {
         foreach ($class->getProperties() as $property) {
-            if ($property->isStatic()) {
-                continue;
-            }
             $this->readProperty($property, $definition);
         }
 
