@@ -39,7 +39,10 @@
         "doctrine/annotations": "~1.2",
         "ocramius/proxy-manager": "~2.0.2",
         "friendsofphp/php-cs-fixer": "^2.4",
-        "phpstan/phpstan": "^0.12"
+        "phpstan/phpstan": "^0.12",
+        "nikic/php-parser": "^4.10",
+        "symfony/finder": "5.x-dev",
+        "roave/better-reflection": "4.12.x-dev"
     },
     "provide": {
         "psr/container-implementation": "^1.0"
