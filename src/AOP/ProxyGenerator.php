@@ -172,9 +172,8 @@ class ProxyGenerator
     {
         $modified = $this->isModified($className);
         if ($modified){
-            
-            $code = $ast->putProxy($class);
-            file_put_contents($this->getProxyFilePath($class), $code);
+            $code = $ast->putProxy($className);
+            file_put_contents($this->getProxyFilePath($className), $code);
         }
     }
 
