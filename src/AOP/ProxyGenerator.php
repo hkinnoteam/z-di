@@ -122,13 +122,6 @@ class ProxyGenerator
         }
         return $annotations;
     }
-    
-    private function setProxies(string $class)
-    {
-        if (!isset($this->proxies[$class])) {
-            $this->proxies[$class] = $this->getProxyFilePath($class);
-        }
-    }
 
     public function getProxyDir()
     {
@@ -139,7 +132,6 @@ class ProxyGenerator
     {
         return $this->proxies;
     }
-    
     
     public static function initClassReflector(array $paths): ClassReflector
     {
@@ -156,6 +148,13 @@ class ProxyGenerator
         return self::$instance;
     }
 
+    private function setProxies(string $class)
+    {
+        if (!isset($this->proxies[$class])) {
+            $this->proxies[$class] = $this->getProxyFilePath($class);
+        }
+    }
+
     protected function generateFiles()
     {
         $ast = new Ast();
@@ -165,11 +164,38 @@ class ProxyGenerator
         }
 
         foreach ($this->proxies as $class => $proxyFile){
+            $this->putFile($ast, $class);
+        }
+    }
+
+    protected function putFile(Ast $ast, string $className)
+    {
+        $modified = $this->isModified($className);
+        if ($modified){
+            
             $code = $ast->putProxy($class);
             file_put_contents($this->getProxyFilePath($class), $code);
         }
     }
-    
+
+    protected function isModified(string $className): bool
+    {
+        $proxyFilePath = $this->getProxyFilePath($className);
+        $time = $this->lastModified($proxyFilePath);
+        $origin = ProxyClassLoader::getLoader()->findFile($className);
+        if ($time >= $this->lastModified($origin)) {
+            var_dump('proxy new');
+            return false;
+        }
+
+        return true;
+    }
+
+    protected function lastModified(string $path): int
+    {
+        return filemtime($path);
+    }
+
     protected function getClassName($className): string
     {
         return basename(str_replace('\\', '/', $className));
@@ -179,7 +205,4 @@ class ProxyGenerator
     {
         return BASE_PATH . '/proxies/' . $this->getClassName($className) . '.php';
     }
-
-
-
 }
