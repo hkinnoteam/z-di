@@ -48,7 +48,9 @@ class ProxyGenerator
         $this->aspects = $aspects;
         $this->finder = new Finder();
         $this->finder->files()->in($this->dir);
-        $this->generateProxyFile();
+        if (! file_exists($this->getProxyDir())) {
+            $this->generateProxyFile();
+        }
     }
 
     public function generateProxyFile(): void

@@ -13,7 +13,7 @@ class ProxyClassLoader
 
     protected $composerClassLoader;
 
-    protected $dir = BASE_PATH . '/app';
+    protected $dir = BASE_PATH . '/app/Core';
     
     protected $config = BASE_PATH . '/config/aspects.php';
     
