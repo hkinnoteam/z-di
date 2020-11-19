@@ -29,7 +29,7 @@ class ProxyGenerator
     protected $dir;
 
     protected $proxyDir = BASE_PATH . '/proxies';
-    
+
     protected $proxies = [];
 
     protected $classMap = [];
@@ -111,7 +111,7 @@ class ProxyGenerator
             }
         }
     }
-    
+
     public function getAspectAnnotations($aspect): array
     {
         $annotations = [];
@@ -129,12 +129,12 @@ class ProxyGenerator
     {
         return $this->proxyDir;
     }
-    
+
     public function getProxies(): array
     {
         return $this->proxies;
     }
-    
+
     public static function initClassReflector(array $paths): ClassReflector
     {
         $reflection = new BetterReflection();
@@ -172,7 +172,13 @@ class ProxyGenerator
 
     protected function putFile(Ast $ast, string $className)
     {
-        $modified = $this->isModified($className);
+        $proxyFile = $this->getProxyFilePath($className);
+        $modified = true;
+
+        if(file_exists($proxyFile)){
+            $modified = $this->isModified($className);
+        }
+
         if ($modified){
             $code = $ast->putProxy($className);
             file_put_contents($this->getProxyFilePath($className), $code);
@@ -185,7 +191,6 @@ class ProxyGenerator
         $time = $this->lastModified($proxyFilePath);
         $origin = ProxyClassLoader::getLoader()->findFile($className);
         if ($time >= $this->lastModified($origin)) {
-            var_dump('proxy new');
             return false;
         }
 

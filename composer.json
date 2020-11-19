@@ -32,7 +32,8 @@
         "php-di/phpdoc-reader": "^2.0.1",
         "opis/closure": "^3.5.5",
         "nikic/php-parser": "^4.10",
-        "symfony/finder": "^5.1"
+        "symfony/finder": "^5.1",
+        "roave/better-reflection": "^4.11"
     },
     "require-dev": {
         "phpunit/phpunit": "^8.5|^9.0",
