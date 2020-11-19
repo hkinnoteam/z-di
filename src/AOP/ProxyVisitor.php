@@ -48,8 +48,10 @@ class ProxyVisitor extends NodeVisitorAbstract
             // Create proxy class base on parent class
             return new Class_($this->getProxyClassName(), [
                 'extends' => $node->extends,
+                'implements' => $node->implements,
                 'flags' => $node->flags,
                 'stmts' => $node->stmts,
+                'attrGroups' => $node->attrGroups
             ]);
         }
 
