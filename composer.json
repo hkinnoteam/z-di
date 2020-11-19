@@ -11,7 +11,7 @@
         },
         "files": [
             "src/functions.php",
-            "src/z-helper.php",
+            "src/z-helper.php"
         ]
     },
     "autoload-dev": {
