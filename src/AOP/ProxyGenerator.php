@@ -28,6 +28,8 @@ class ProxyGenerator
 
     protected $dir;
 
+    protected $proxyDir = BASE_PATH . '/proxies';
+    
     protected $proxies = [];
 
     protected $classMap = [];
@@ -40,44 +42,38 @@ class ProxyGenerator
 
     protected static $instance;
 
-    public function __construct(string $dir, string $config)
+    public function __construct(string $dir, array $aspects)
     {
         $this->dir    = $dir;
-        $this->config = $config;
+        $this->aspects = $aspects;
         $this->finder = new Finder();
         $this->finder->files()->in($this->dir);
         $this->generateProxyFile();
     }
 
-
     public function generateProxyFile(): void
     {
-        $this->collectMethodMapFile();
-        $this->collectAnnotationMapFile();
-        $this->collectClassNameByAnnotation();
+        $this->collectMethodAspectProxie();
+        $this->collectAnnotationAspectProxie();
         $this->generateFiles();
     }
 
-    protected function generateFiles()
+    public function collectMethodAspectProxie(): void
     {
-        $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
-        $namespaces = array_keys($this->proxies);
-        foreach ($namespaces as $class){
-            $file = ProxyClassLoader::getLoader()->findFile($class);
-            $code = file_get_contents($file);
-            $ast = $parser->parse($code);
-            $visitor = new ProxyVisitor($class);
-            $traverser = new NodeTraverser();
-            $traverser->addVisitor($visitor);
-            $proxyAst = $traverser->traverse($ast);
-            $printer = new Standard();
-            $proxyCode = $printer->prettyPrintFile($proxyAst);
-            file_put_contents($this->getProxyFilePath($visitor->getProxyClassName()), $proxyCode);
+        foreach ($this->aspects as $aspect) {
+            $classes  = new \ReflectionClass($aspect);
+            $property = $classes->getProperty('classes')->getValue(new $aspect);
+            foreach ($property as $v) {
+                [$className, $method] = explode('::', $v);
+                AspectCollector::setAspect($className, $method, $aspect);
+                $this->setProxies($className);
+            }
         }
     }
-    
-    public function collectClassNameByAnnotation()
+
+    public function collectAnnotationAspectProxie()
     {
+        $this->collectAspectsAnnotations();
         $reader = new AnnotationReader();
         $res    = self::initClassReflector([$this->dir]);
         $class  = $res->getAllClasses();
@@ -89,13 +85,11 @@ class ProxyGenerator
                 if (!empty($methodAnnotations)) {
                     foreach ($methodAnnotations as $methodAnnotation) {
                         if ($methodAnnotation instanceof AnnotationInterface) {
-                            if (!isset($this->proxies[$className])) {
-                                $this->proxies[$className] = $this->getProxyFilePath($className);
-                            }
+                            $this->setProxies($className);
                             $annotationReflection = new \ReflectionClass($methodAnnotation);
-                            $result = array_search($annotationReflection->getName(), $this->annotations, true);
-                            if ($result){
-                                AspectCollector::setAspect($className, $method->getName(), $result);
+                            $aspect = array_search($annotationReflection->getName(), $this->annotations, true);
+                            if ($aspect){
+                                AspectCollector::setAspect($className, $method->getName(), $aspect);
                             }
                         }
                     }
@@ -104,36 +98,10 @@ class ProxyGenerator
         }
     }
 
-    public static function initClassReflector(array $paths): ClassReflector
-    {
-        $reflection = new BetterReflection();
-        $astLocator = $reflection->astLocator();
-        return new ClassReflector(new AggregateSourceLocator([
-            new DirectoriesSourceLocator($paths, $astLocator)
-        ]));
-    }
-
-
-    public function collectMethodMapFile(): void
-    {
-        $this->aspects = include $this->config . '/aspects.php';
-        foreach ($this->aspects as $aspect) {
-            $classes  = new \ReflectionClass($aspect);
-            $property = $classes->getProperty('classes')->getValue(new $aspect);
-            foreach ($property as $v) {
-                [$target, $method] = explode('::', $v);
-                AspectCollector::setAspect($target, $method, $aspect);
-                if (!isset($this->proxies[$target])) {
-                    $this->proxies[$target] = $this->getProxyFilePath($target);
-                }
-            }
-        }
-    }
-
-    public function collectAnnotationMapFile(): void
+    public function collectAspectsAnnotations(): void
     {
         foreach ($this->aspects as $aspect) {
-            $result = $this->getAnnotations($aspect);
+            $result = $this->getAspectAnnotations($aspect);
             foreach ($result as $annotation) {
                 if (!in_array($annotation, $this->annotations, true)) {
                     $this->annotations [$aspect] = $annotation;
@@ -141,8 +109,8 @@ class ProxyGenerator
             }
         }
     }
-
-    protected function getAnnotations($aspect): array
+    
+    public function getAspectAnnotations($aspect): array
     {
         $annotations = [];
         $classes     = new \ReflectionClass($aspect);
@@ -154,7 +122,54 @@ class ProxyGenerator
         }
         return $annotations;
     }
+    
+    private function setProxies(string $class)
+    {
+        if (!isset($this->proxies[$class])) {
+            $this->proxies[$class] = $this->getProxyFilePath($class);
+        }
+    }
 
+    public function getProxyDir()
+    {
+        return $this->proxyDir;
+    }
+    
+    public function getProxies(): array
+    {
+        return $this->proxies;
+    }
+    
+    
+    public static function initClassReflector(array $paths): ClassReflector
+    {
+        $reflection = new BetterReflection();
+        $astLocator = $reflection->astLocator();
+
+        if (!isset(self::$instance)){
+            self::$instance = new ClassReflector(new AggregateSourceLocator([
+                new DirectoriesSourceLocator($paths, $astLocator)
+            ]));
+            return self::$instance;
+        }
+
+        return self::$instance;
+    }
+
+    protected function generateFiles()
+    {
+        $ast = new Ast();
+
+        if (! file_exists($this->getProxyDir())) {
+            mkdir($this->getProxyDir(), 0755, true);
+        }
+
+        foreach ($this->proxies as $class => $proxyFile){
+            $code = $ast->putProxy($class);
+            file_put_contents($this->getProxyFilePath($class), $code);
+        }
+    }
+    
     protected function getClassName($className): string
     {
         return basename(str_replace('\\', '/', $className));
@@ -165,12 +180,6 @@ class ProxyGenerator
         return BASE_PATH . '/proxies/' . $this->getClassName($className) . '.php';
     }
 
-    /**
-     * @return array
-     */
-    public function getProxies(): array
-    {
-        return $this->proxies;
-    }
+
 
 }

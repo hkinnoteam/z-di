@@ -15,14 +15,15 @@ class ProxyClassLoader
 
     protected $dir = BASE_PATH . '/app';
     
-    protected $config = BASE_PATH . '/config';
+    protected $config = BASE_PATH . '/config/aspects.php';
     
     protected $proxies = [];
 
     public function __construct($composerClassLoader)
     {
         $this->composerClassLoader = $composerClassLoader;
-        $proxyGenerator = new ProxyGenerator($this->dir, $this->config);
+        $aspects = include $this->config;
+        $proxyGenerator = new ProxyGenerator($this->dir, $aspects);
         $this->proxies = $proxyGenerator->getProxies();
     }
 

@@ -10,7 +10,8 @@
             "DI\\": "src/"
         },
         "files": [
-            "src/functions.php"
+            "src/functions.php",
+            "src/z-helper.php",
         ]
     },
     "autoload-dev": {

@@ -20,23 +20,16 @@ use PhpParser\NodeVisitorAbstract;
 class ProxyVisitor extends NodeVisitorAbstract
 {
     protected $className;
+    
 
-    protected $proxyId;
-
-    public function __construct($className, $proxyId = '')
+    public function __construct($className)
     {
         $this->className = $className;
-        $this->proxyId = $proxyId;
     }
 
     public function getProxyClassName(): string
     {
         return basename(str_replace('\\', '/', $this->className));
-    }
-
-    public function getClassName(): string
-    {
-        return '\\' . $this->className . '_' . $this->proxyId;
     }
 
     /**
@@ -62,13 +55,6 @@ class ProxyVisitor extends NodeVisitorAbstract
         // Rewrite public and protected methods, without static methods
         if ($node instanceof ClassMethod && ($node->isPublic() || $node->isProtected())) {
             $methodName = $node->name->toString();
-            // Rebuild closure uses, only variable
-            $uses = [];
-            foreach ($node->params as $key => $param) {
-                if ($param instanceof Param) {
-                    $uses[$key] = new Param($param->var, null, null, true);
-                }
-            }
 
             $params = [
                 new Variable('class'),
@@ -88,10 +74,12 @@ class ProxyVisitor extends NodeVisitorAbstract
                 new Expression(new Node\Expr\Assign(new Variable('method'), new Node\Scalar\MagicConst\Method())),
                 new Return_(new Node\Expr\StaticCall(new Name('self'), '__proxyCall', $params))
             ];
+            
             $returnType = $node->getReturnType();
             if ($returnType instanceof Name && $returnType->toString() === 'self') {
                 $returnType = new Name('\\' . $this->className);
             }
+            
             return new ClassMethod($methodName, [
                 'flags' => $node->flags,
                 'byRef' => $node->byRef,
