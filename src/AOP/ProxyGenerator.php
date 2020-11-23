@@ -24,9 +24,11 @@ use Symfony\Component\Finder\Finder;
 
 class ProxyGenerator
 {
+    protected $basePath;
+
     protected $config;
 
-    protected $dir;
+    protected $scanPath;
 
     protected $proxyDir;
 
@@ -38,38 +40,35 @@ class ProxyGenerator
 
     protected $aspects;
 
+    protected $cachePath;
+
     protected static $instance;
 
     public function __construct(string $dir, array $aspects)
     {
-        $this->dir      = $dir;
+        $this->basePath = $dir;
+        $this->scanPath = $dir . '/app/Core';
         $this->aspects  = $aspects;
         $this->proxyDir = $dir . '/proxies';
+        $this->cachePath = $this->proxyDir . '/cache';
         $this->finder   = new Finder();
-        $this->finder->files()->in($this->dir);
+        $this->finder->files()->in($this->scanPath);
         // cache not existing
         if (! file_exists($this->getProxyDir())) {
             $this->generateProxyFile();
         }else{
             //cache exist gen mapping array
-            $this->generateProxiesMapping();
+            $this->collectMethodAspect();
+            $vendorDir = $this->basePath . '/vendor/hkinnoteam/z-di/src/AOP';
+            $this->collectAnnotationAspect([$this->proxyDir, $vendorDir]);
         }
     }
 
-    public function generateProxiesMapping():void 
-    {
-        $reflectorClasses = self::initClassReflector([$this->getProxyDir()]);
-        $class  = $reflectorClasses->getAllClasses();
-        foreach ($class as $reflection){
-            $className = $reflection->getName();
-            $this->setProxies($className);
-        }
-    }
-    
     public function generateProxyFile(): void
     {
         $this->collectMethodAspect();
-        $this->collectAnnotationAspect();
+        $this->collectAnnotationAspect([$this->scanPath]);
+        AspectCollector::serializeAspects($this->cachePath);
         $this->generateFiles();
     }
 
@@ -86,11 +85,15 @@ class ProxyGenerator
         }
     }
 
-    public function collectAnnotationAspect()
+    public function collectAnnotationAspect(array $dirs): void
     {
+        if (AspectCollector::unserializeAspects($this->cachePath)){
+            return ;
+        }
+
         $this->collectAspectsAnnotations();
         $reader = new AnnotationReader();
-        $res    = self::initClassReflector([$this->dir]);
+        $res    = self::initClassReflector($dirs);
         $class  = $res->getAllClasses();
         foreach ($class as $reflection) {
             $methods   = $reflection->getImmediateMethods();
@@ -222,6 +225,6 @@ class ProxyGenerator
 
     protected function getProxyFilePath($className)
     {
-        return $this->dir . '/proxies/' . $this->getClassName($className) . '.php';
+        return $this->basePath . '/proxies/' . $this->getClassName($className) . '.php';
     }
 }

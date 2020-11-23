@@ -13,23 +13,17 @@ class ProxyClassLoader
 
     protected $composerClassLoader;
 
-    protected $dir;
-    
-    protected $config;
-    
     protected $proxies = [];
 
-    public function __construct(ClassLoader $composerClassLoader, string $appPath, string $configPath)
+    public function __construct(ClassLoader $composerClassLoader, string $basePath, string $configPath)
     {
         $this->composerClassLoader = $composerClassLoader;
-        $this->dir = $appPath;
-        $this->config = $configPath;
-        $aspects = include $this->config;
-        $proxyGenerator = new ProxyGenerator($this->dir, $aspects);
+        $aspects = include $configPath . '/aspects.php';
+        $proxyGenerator = new ProxyGenerator($basePath, $aspects);
         $this->proxies = $proxyGenerator->getProxies();
     }
 
-    public static function init(string $appPath, string $configPath)
+    public static function init(string $basePath, string $configPath)
     {
         $loader = spl_autoload_functions();
 
@@ -40,7 +34,7 @@ class ProxyClassLoader
                 AnnotationRegistry::registerLoader(function ($class) use ($composerClassLoader) {
                     return (bool) $composerClassLoader->findFile($class);
                 });
-                $load[0] = new static($composerClassLoader);
+                $load[0] = new static($composerClassLoader, $basePath, $configPath);
             }
 
             spl_autoload_unregister($unregisterLoader);
