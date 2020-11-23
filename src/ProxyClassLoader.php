@@ -13,21 +13,23 @@ class ProxyClassLoader
 
     protected $composerClassLoader;
 
-    protected $dir = BASE_PATH . '/app/Core';
+    protected $dir;
     
-    protected $config = BASE_PATH . '/config/aspects.php';
+    protected $config;
     
     protected $proxies = [];
 
-    public function __construct($composerClassLoader)
+    public function __construct(ClassLoader $composerClassLoader, string $appPath, string $configPath)
     {
         $this->composerClassLoader = $composerClassLoader;
+        $this->dir = $appPath;
+        $this->config = $configPath;
         $aspects = include $this->config;
         $proxyGenerator = new ProxyGenerator($this->dir, $aspects);
         $this->proxies = $proxyGenerator->getProxies();
     }
 
-    public static function init()
+    public static function init(string $appPath, string $configPath)
     {
         $loader = spl_autoload_functions();
 

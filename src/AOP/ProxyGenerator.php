@@ -28,11 +28,9 @@ class ProxyGenerator
 
     protected $dir;
 
-    protected $proxyDir = BASE_PATH . '/proxies';
+    protected $proxyDir;
 
     protected $proxies = [];
-
-    protected $classMap = [];
 
     protected $annotations = [];
 
@@ -44,23 +42,38 @@ class ProxyGenerator
 
     public function __construct(string $dir, array $aspects)
     {
-        $this->dir    = $dir;
-        $this->aspects = $aspects;
-        $this->finder = new Finder();
+        $this->dir      = $dir;
+        $this->aspects  = $aspects;
+        $this->proxyDir = $dir . '/proxies';
+        $this->finder   = new Finder();
         $this->finder->files()->in($this->dir);
+        // cache not existing
         if (! file_exists($this->getProxyDir())) {
             $this->generateProxyFile();
+        }else{
+            //cache exist gen mapping array
+            $this->generateProxiesMapping();
         }
     }
 
+    public function generateProxiesMapping():void 
+    {
+        $reflectorClasses = self::initClassReflector([$this->getProxyDir()]);
+        $class  = $reflectorClasses->getAllClasses();
+        foreach ($class as $reflection){
+            $className = $reflection->getName();
+            $this->setProxies($className);
+        }
+    }
+    
     public function generateProxyFile(): void
     {
-        $this->collectMethodAspectProxie();
-        $this->collectAnnotationAspectProxie();
+        $this->collectMethodAspect();
+        $this->collectAnnotationAspect();
         $this->generateFiles();
     }
 
-    public function collectMethodAspectProxie(): void
+    public function collectMethodAspect(): void
     {
         foreach ($this->aspects as $aspect) {
             $classes  = new \ReflectionClass($aspect);
@@ -73,7 +86,7 @@ class ProxyGenerator
         }
     }
 
-    public function collectAnnotationAspectProxie()
+    public function collectAnnotationAspect()
     {
         $this->collectAspectsAnnotations();
         $reader = new AnnotationReader();
@@ -209,6 +222,6 @@ class ProxyGenerator
 
     protected function getProxyFilePath($className)
     {
-        return BASE_PATH . '/proxies/' . $this->getClassName($className) . '.php';
+        return $this->dir . '/proxies/' . $this->getClassName($className) . '.php';
     }
 }
