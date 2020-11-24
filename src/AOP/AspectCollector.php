@@ -30,11 +30,11 @@ class AspectCollector
 
     public static function serializeAspects(string $cachePath)
     {
-        if (!file_exists($cachePath)) {
-            mkdir($cachePath, 0755, true);
-        }
-
         if (!empty(self::$aspects)) {
+            if (!file_exists($cachePath)) {
+                mkdir($cachePath, 0755, true);
+            }
+
             $serializeAspects = serialize(self::$aspects);
             file_put_contents($cachePath . '/' . self::$cacheName, $serializeAspects);
         }
@@ -42,8 +42,9 @@ class AspectCollector
 
     public static function unserializeAspects(string $cachePath)
     {
-        if (is_string($cachePath) && file_exists($cachePath)){
-            $fileContent = file_get_contents($cachePath . '/' .self::$cacheName);
+        $cacheFile = $cachePath . '/' .self::$cacheName;
+        if (is_string($cachePath) && file_exists($cacheFile)){
+            $fileContent = file_get_contents($cacheFile);
             self::$aspects = unserialize($fileContent, ["allowed_classes" => true]);
             return true;
         }
