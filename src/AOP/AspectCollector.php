@@ -30,13 +30,13 @@ class AspectCollector
 
     public static function serializeAspects(string $cachePath)
     {
-        if (is_string($cachePath)){
-            if (! file_exists($cachePath)) {
-                mkdir($cachePath, 0755, true);
-            }
+        if (!file_exists($cachePath)) {
+            mkdir($cachePath, 0755, true);
+        }
 
+        if (!empty(self::$aspects)) {
             $serializeAspects = serialize(self::$aspects);
-            file_put_contents($cachePath . '/' .self::$cacheName, $serializeAspects);
+            file_put_contents($cachePath . '/' . self::$cacheName, $serializeAspects);
         }
     }
 
