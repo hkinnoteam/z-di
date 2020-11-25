@@ -54,7 +54,7 @@ class ProxyGenerator
         $this->finder   = new Finder();
         $this->finder->files()->in($this->scanPath);
         // cache not existing
-        if (! file_exists($this->getProxyDir())) {
+        if ($this->isGenerateProxy($this->aspects)) {
             $this->generateProxyFile();
         }else{
             //cache exist gen mapping array
@@ -223,8 +223,18 @@ class ProxyGenerator
         return basename(str_replace('\\', '/', $className));
     }
 
-    protected function getProxyFilePath($className)
+    protected function getProxyFilePath($className) : string
     {
         return $this->basePath . '/proxies/' . $this->getClassName($className) . '.php';
+    }
+
+    protected function isGenerateProxy(array $aspects): bool
+    {
+        foreach ($aspects as $aspect){
+            if (!file_exists($aspect)){
+                return true;
+            }
+        }
+        return false;
     }
 }
