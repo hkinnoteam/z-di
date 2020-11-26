@@ -87,7 +87,7 @@ class ProxyGenerator
 
     public function collectAnnotationAspect(array $dirs): void
     {
-        if (AspectCollector::unserializeAspects($this->cachePath)){
+        if (AspectCollector::unserializeAspects($this->cachePath) || !file_exists($this->proxyDir)){
             return ;
         }
 
