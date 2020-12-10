@@ -57,6 +57,11 @@ class ProxyVisitor extends NodeVisitorAbstract
 
         // Rewrite public and protected methods, without static methods
         if ($node instanceof ClassMethod && ($node->isPublic() || $node->isProtected())) {
+            $variables = [];
+            foreach ($node->params as $param){
+                $variables[] = new Param(new Variable($param->var->name));
+            }
+
             $methodName = $node->name->toString();
 
             $params = [
@@ -66,8 +71,8 @@ class ProxyVisitor extends NodeVisitorAbstract
                 // Add method to an closure
                 new Closure([
                     'static' => $node->isStatic(),
-                    'params' => $node->params,
-                    'stmts' => $node->stmts,
+                    'params' => $variables,
+                    'stmts'  => $node->stmts,
                 ])
             ];
 
