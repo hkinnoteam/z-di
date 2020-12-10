@@ -18,8 +18,19 @@ trait ProxyTrait
      */
     public static function __proxyCall(string $class, string $method, array $params, \Closure $closure)
     {
-        $proceedingJoinPoint = new ProceedingJoinPoint($class, $method, $params, $closure);
+        $mapParams = self::mapParameters($class, $method, $params);
+        $proceedingJoinPoint = new ProceedingJoinPoint($class, $method, $mapParams, $closure);
         return self::handleAround($proceedingJoinPoint);
+    }
+
+    public static function mapParameters(string $class, string $method, array $params)
+    {
+        $mapParams = [];
+        $relection = new \ReflectionMethod($class, $method);
+        foreach ($relection->getParameters() as $index => $parameter){
+            $mapParams[$parameter->name] = $params[$index];
+        }
+        return $mapParams;
     }
 
     public static function handleAround(ProceedingJoinPoint $proceedingJoinPoint)

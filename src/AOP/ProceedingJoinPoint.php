@@ -47,7 +47,7 @@ class ProceedingJoinPoint
     {
         $this->pipe = null;
         $closure = $this->originalMethod;
-        return $closure(...$this->arguments);
+        return $closure(...array_values($this->arguments));
     }
 
     /**
