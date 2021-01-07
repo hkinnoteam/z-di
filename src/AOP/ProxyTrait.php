@@ -28,7 +28,7 @@ trait ProxyTrait
         $mapParams = [];
         $relection = new \ReflectionMethod($class, $method);
         foreach ($relection->getParameters() as $index => $parameter){
-            $mapParams[$parameter->name] = $params[$index];
+            $mapParams[$parameter->name] = $params[$index] ?? null;
         }
         return $mapParams;
     }
